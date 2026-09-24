@@ -3,15 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradeCraft Studio - Capsule Journal Builder</title>
-  
+  <title>Custom Trading Journal Photo Generator</title>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Google Fonts: Satisfy (Script), Dancing Script, Playfair Display, Cinzel, Oswald, Inter, Courier Prime -->
+  <!-- Cropper.js CSS & JS CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Dancing+Script:wght@600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Oswald:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Satisfy&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -33,9 +37,9 @@
           },
           colors: {
             app: {
-              bg: '#0A0E17',
-              panel: '#111827',
-              border: '#1F2937',
+              bg: '#080C14',
+              panel: '#0F172A',
+              border: '#1E293B',
               accent: '#3B82F6'
             }
           }
@@ -45,13 +49,13 @@
   </script>
 
   <style>
-    /* Custom Scrollbar Styling */
+    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0A0E17; }
-    ::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    ::-webkit-scrollbar-track { background: #080C14; }
+    ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-    /* Grid Background Pattern */
+    /* Grid Canvas Pattern */
     .bg-grid-pattern {
       background-size: 24px 24px;
       background-image: 
@@ -59,81 +63,129 @@
         linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     }
 
-    .canvas-box-shadow {
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    .canvas-shadow {
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Cropper Custom Styling Override */
+    .cropper-bg {
+      background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%);
     }
   </style>
 </head>
 <body class="bg-app-bg text-slate-100 font-sans min-h-screen flex flex-col antialiased bg-grid-pattern selection:bg-blue-600 selection:text-white">
 
-  <!-- Application Navigation Header -->
+  <!-- App Top Navigation Header -->
   <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 lg:px-8 py-3">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
       
-      <!-- Brand Identifier -->
+      <!-- Brand Logo -->
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-amber-400 p-0.5 shadow-lg shadow-blue-500/20">
           <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-            <i data-lucide="layout-template" class="w-5 h-5 text-amber-400"></i>
+            <i data-lucide="crop" class="w-5 h-5 text-amber-400"></i>
           </div>
         </div>
         <div>
           <h1 class="font-extrabold text-base tracking-tight text-white flex items-center gap-2">
-            JournalCraft <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono uppercase">Capsule Edition</span>
+            JournalCraft Studio <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono uppercase">Pro Edition</span>
           </h1>
-          <p class="text-[11px] text-slate-400">Instant Aesthetic Trading Journal Generator</p>
+          <p class="text-[11px] text-slate-400">Custom Trading Journal Photo Generator with Cropper & HD Upscaler</p>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
-        <button id="btn-reset-all" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition-all flex items-center gap-1.5">
+      <!-- Action Buttons & Export Controls -->
+      <div class="flex items-center gap-3">
+        
+        <!-- Resolution Upscale Selector -->
+        <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg p-1 text-xs">
+          <span class="text-[10px] font-bold text-slate-400 uppercase px-2">Export Quality:</span>
+          <select id="select-export-scale" class="bg-slate-900 text-amber-400 font-extrabold rounded px-2 py-1 focus:outline-none cursor-pointer">
+            <option value="1">1x Standard (900px)</option>
+            <option value="2" selected>2x HD Crisp (1800px)</option>
+            <option value="3">3x 4K Ultra (2700px)</option>
+            <option value="4">4x 8K Super HD (3600px)</option>
+          </select>
+        </div>
+
+        <button id="btn-reset-template" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition-all flex items-center gap-1.5">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-          <span>Reset Template</span>
+          <span>Reset</span>
         </button>
-        <button id="btn-quick-export" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold rounded-lg shadow-lg flex items-center gap-2 transition-all active:scale-95">
+
+        <button id="btn-export-png" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold rounded-lg shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all active:scale-95">
           <i data-lucide="download" class="w-4 h-4"></i>
-          <span>Export HD PNG</span>
+          <span>Export PNG HD</span>
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- Main Grid Layout -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    <!-- LEFT SIDEBAR: EDITING CONTROL PANELS -->
+    <!-- LEFT SIDEBAR: CONTROL PANELS -->
     <div class="lg:col-span-5 space-y-5">
       
-      <!-- Panel Wrapper -->
       <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-5 shadow-xl">
         
-        <!-- Header Controls Section -->
-        <div class="space-y-4">
+        <!-- SECTION 1: CHART SCREENSHOT & CROPPER -->
+        <div class="space-y-3">
           <div class="flex items-center justify-between pb-2 border-b border-slate-800">
             <h2 class="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-2">
               <i data-lucide="image" class="w-4 h-4"></i>
-              1. Screenshot Chart & Aset
+              1. Screenshot Chart & Crop
             </h2>
-            <span class="text-[10px] text-slate-400">Upload Gambar</span>
+            <span class="text-[10px] text-slate-400">Cropper.js Ready</span>
           </div>
 
-          <!-- Chart File Drop Zone -->
+          <!-- File Upload Dropzone -->
           <div id="chart-dropzone" class="border-2 border-dashed border-slate-700 hover:border-blue-500 bg-slate-950/60 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group">
             <div class="w-10 h-10 rounded-full bg-blue-500/10 text-blue-400 group-hover:scale-110 flex items-center justify-center transition-transform">
               <i data-lucide="upload-cloud" class="w-5 h-5"></i>
             </div>
             <div>
               <p class="text-xs font-bold text-slate-200 line-clamp-1" id="chart-filename">Upload Screenshot Chart Trading</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">Klik atau seret file gambar ke sini (TradingView / MT4 / MT5)</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">Klik / Drag gambar screenshot (TradingView / MT4)</p>
             </div>
             <input type="file" id="input-chart-file" accept="image/*" class="hidden">
           </div>
+
+          <!-- Crop Trigger & Image Filter Sliders -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button id="btn-open-cropper" disabled class="col-span-2 py-2 bg-indigo-600/30 border border-indigo-500/40 hover:bg-indigo-600 text-indigo-200 disabled:opacity-40 disabled:pointer-events-none text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="crop" class="w-4 h-4"></i>
+              <span>Potong / Crop Chart Image</span>
+            </button>
+          </div>
+
+          <!-- Sharpening & Brightness Sliders -->
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2.5">
+            <span class="text-[11px] font-bold text-slate-300 block">Kualitas & Clarity Screenshot</span>
+            
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                  <span>Brightness</span>
+                  <span id="val-brightness">100%</span>
+                </div>
+                <input type="range" id="slider-brightness" min="70" max="140" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                  <span>Contrast / Wick Sharpen</span>
+                  <span id="val-contrast">100%</span>
+                </div>
+                <input type="range" id="slider-contrast" min="80" max="160" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Top Pill Header Customizer Section -->
-        <div class="space-y-4 pt-2 border-t border-slate-800">
+        <!-- SECTION 2: TOP CAPSULE HEADER -->
+        <div class="space-y-3 pt-2 border-t border-slate-800">
           <div class="flex items-center justify-between">
             <h2 class="text-xs font-extrabold uppercase tracking-wider text-blue-400 flex items-center gap-2">
               <i data-lucide="panel-top" class="w-4 h-4"></i>
@@ -145,9 +197,12 @@
             </label>
           </div>
 
-          <!-- Left Pill: Timeframe & Left Icon -->
+          <!-- Left Element: Circular Asset Icon & Timeframe -->
           <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3">
-            <span class="text-[11px] font-bold text-slate-300 block">Kiri: Timeframe & Icon Asset</span>
+            <span class="text-[11px] font-bold text-slate-300 block flex items-center justify-between">
+              <span>Kiri: Circular Asset Badge & Timeframe</span>
+              <span class="text-[9px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">Lingkaran Sempurna</span>
+            </span>
             
             <div class="grid grid-cols-2 gap-2">
               <div>
@@ -156,28 +211,43 @@
               </div>
 
               <div>
-                <label class="text-[10px] text-slate-400 block mb-1">Icon Kiri (Gold / Custom)</label>
-                <button id="btn-trigger-left-icon" class="w-full bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 flex items-center justify-between">
-                  <span id="lbl-left-icon" class="truncate">Gold Stack</span>
-                  <i data-lucide="upload" class="w-3.5 h-3.5 text-slate-400"></i>
-                </button>
-                <input type="file" id="input-left-icon-file" accept="image/*" class="hidden">
+                <label class="text-[10px] text-slate-400 block mb-1">Background Circle Icon</label>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="input-asset-bg-color" value="#EAB308" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+                  <select id="select-asset-preset" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-slate-200">
+                    <option value="#EAB308" selected>Gold / Amber</option>
+                    <option value="#0F172A">Dark Slate</option>
+                    <option value="#3B82F6">Royal Blue</option>
+                    <option value="#10B981">Emerald Green</option>
+                    <option value="#FFFFFF">Clean White</option>
+                  </select>
+                </div>
               </div>
+            </div>
+
+            <!-- Asset Circle Image Upload -->
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-1">Upload Gambar Logo Asset Lingkaran</label>
+              <button id="btn-trigger-asset-icon" class="w-full bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 flex items-center justify-between">
+                <span id="lbl-asset-icon" class="truncate">Gold Stack (Default)</span>
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-slate-400"></i>
+              </button>
+              <input type="file" id="input-asset-icon-file" accept="image/*" class="hidden">
             </div>
           </div>
 
-          <!-- Center Social Media Handle & Icons -->
+          <!-- Center Element: Social Handles -->
           <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3">
             <span class="text-[11px] font-bold text-slate-300 block">Tengah: Social Media Handle</span>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Username / Handle Text</label>
                 <input type="text" id="input-username" value="@Fungfx" placeholder="e.g. @Fungfx" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
               </div>
 
               <div>
-                <label class="text-[10px] text-slate-400 block mb-1">Gaya Font Username</label>
+                <label class="text-[10px] text-slate-400 block mb-1">Gaya Font Handle</label>
                 <select id="select-username-font" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white focus:outline-none">
                   <option value="Satisfy" selected>Satisfy (Cursive Script)</option>
                   <option value="Dancing Script">Dancing Script (Soft Script)</option>
@@ -188,9 +258,9 @@
               </div>
             </div>
 
-            <!-- Social Icon Toggles -->
+            <!-- Social Media Icon Toggles -->
             <div>
-              <label class="text-[10px] text-slate-400 block mb-1.5">Tampilkan Icon Socials:</label>
+              <label class="text-[10px] text-slate-400 block mb-1">Tampilkan Icon Socials:</label>
               <div class="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-lg border border-slate-800 text-xs">
                 <label class="flex items-center gap-1.5 cursor-pointer">
                   <input type="checkbox" id="social-tiktok" checked class="rounded bg-slate-950 border-slate-700 text-blue-600">
@@ -212,9 +282,9 @@
             </div>
           </div>
 
-          <!-- Right Badge / Logo -->
+          <!-- Right Element: Dark Badge Circle -->
           <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3">
-            <span class="text-[11px] font-bold text-slate-300 block">Kanan: Logo Circle Badge</span>
+            <span class="text-[11px] font-bold text-slate-300 block">Kanan: Dark Circle Badge / Initials</span>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
@@ -223,7 +293,7 @@
               </div>
 
               <div>
-                <label class="text-[10px] text-slate-400 block mb-1">Atau Upload Logo PNG</label>
+                <label class="text-[10px] text-slate-400 block mb-1">Atau Logo PNG Kanan</label>
                 <button id="btn-trigger-right-logo" class="w-full bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 flex items-center justify-between">
                   <span id="lbl-right-logo" class="truncate">Upload Logo</span>
                   <i data-lucide="image" class="w-3.5 h-3.5 text-slate-400"></i>
@@ -232,11 +302,10 @@
               </div>
             </div>
           </div>
-
         </div>
 
-        <!-- Bottom Pill Footer Customizer Section -->
-        <div class="space-y-4 pt-2 border-t border-slate-800">
+        <!-- SECTION 3: BOTTOM CAPSULE FOOTER -->
+        <div class="space-y-3 pt-2 border-t border-slate-800">
           <div class="flex items-center justify-between">
             <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
               <i data-lucide="panel-bottom" class="w-4 h-4"></i>
@@ -249,10 +318,10 @@
           </div>
 
           <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="text-[10px] text-slate-400 block mb-1">Teks Footer (Profil / Tanggal / Note)</label>
-                <input type="text" id="input-footer-text" value="PROFILE" placeholder="e.g. PROFILE, SWEEP, H4 OUTSIDE" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <label class="text-[10px] text-slate-400 block mb-1">Teks Footer (Profil/Tanggal)</label>
+                <input type="text" id="input-footer-text" value="PROFILE" placeholder="e.g. PROFILE, SWEEP, H4" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
               </div>
 
               <div>
@@ -269,11 +338,11 @@
           </div>
         </div>
 
-        <!-- Canvas Background & Aspect Ratio Section -->
+        <!-- SECTION 4: CANVAS & BACKGROUND -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
           <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i>
-            4. Pengaturan Canvas Poster
+            4. Pengaturan Canvas & Warna
           </h2>
 
           <div class="grid grid-cols-2 gap-2">
@@ -287,7 +356,7 @@
             </div>
 
             <div>
-              <label class="text-[10px] text-slate-400 block mb-1">Warna Background Canvas</label>
+              <label class="text-[10px] text-slate-400 block mb-1">Background Canvas</label>
               <div class="flex items-center gap-2">
                 <input type="color" id="input-bg-color" value="#FFFFFF" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
                 <select id="select-bg-preset" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-1.5 text-xs text-slate-200">
@@ -307,7 +376,7 @@
     <!-- RIGHT MAIN: REAL-TIME INTERACTIVE CANVAS PREVIEW -->
     <div class="lg:col-span-7 flex flex-col items-center">
       
-      <div class="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center space-y-4 shadow-xl">
+      <div class="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center space-y-4 shadow-xl sticky top-20">
         
         <!-- Live Preview Header -->
         <div class="w-full flex items-center justify-between pb-2 border-b border-slate-800">
@@ -320,14 +389,14 @@
 
         <!-- Canvas Container -->
         <div class="w-full flex justify-center items-center overflow-auto p-2">
-          <div class="canvas-box-shadow relative rounded-xl overflow-hidden border border-slate-700/50 bg-white">
+          <div class="canvas-shadow relative rounded-xl overflow-hidden border border-slate-700/50 bg-white">
             <canvas id="journal-canvas" class="max-w-full h-auto block"></canvas>
           </div>
         </div>
 
         <p class="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1.5">
           <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
-          Semua perubahan di samping kiri langsung dirender secara real-time di atas canvas HD!
+          Gunakan tombol <b>Export PNG HD</b> di atas untuk mendownload gambar resolusi ultra-tinggi!
         </p>
 
       </div>
@@ -336,7 +405,66 @@
 
   </main>
 
-  <!-- Notification Toast -->
+  <!-- CROPPER MODAL DIALOG -->
+  <div id="cropper-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div class="flex items-center gap-2">
+          <i data-lucide="crop" class="w-4 h-4 text-indigo-400"></i>
+          <h3 class="text-sm font-bold text-white">Potong / Crop Screenshot Chart</h3>
+        </div>
+        <button id="btn-close-cropper" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Cropper Image Workarea -->
+      <div class="flex-1 p-4 overflow-hidden flex items-center justify-center bg-slate-950 min-h-[350px]">
+        <div class="max-w-full max-h-[55vh] overflow-hidden">
+          <img id="cropper-target-img" src="" alt="Chart to crop" class="max-w-full block">
+        </div>
+      </div>
+
+      <!-- Cropper Controls & Actions Toolbar -->
+      <div class="p-4 border-t border-slate-800 bg-slate-900 flex flex-wrap items-center justify-between gap-3">
+        
+        <!-- Aspect Ratio Selection -->
+        <div class="flex items-center gap-1 text-xs">
+          <span class="text-[10px] text-slate-400 mr-1">Rasio:</span>
+          <button data-ratio="NaN" class="btn-crop-ratio px-2.5 py-1 bg-blue-600 text-white rounded font-medium">Free</button>
+          <button data-ratio="1" class="btn-crop-ratio px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-medium">1:1</button>
+          <button data-ratio="0.75" class="btn-crop-ratio px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-medium">3:4</button>
+          <button data-ratio="1.333" class="btn-crop-ratio px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-medium">4:3</button>
+          <button data-ratio="1.777" class="btn-crop-ratio px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-medium">16:9</button>
+        </div>
+
+        <!-- Rotate & Zoom Buttons -->
+        <div class="flex items-center gap-2">
+          <button id="btn-crop-rotate-left" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg" title="Rotate Left">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+          <button id="btn-crop-rotate-right" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg" title="Rotate Right">
+            <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+          </button>
+          <button id="btn-crop-reset" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg font-medium">
+            Reset
+          </button>
+        </div>
+
+        <!-- Save Cropped Action -->
+        <button id="btn-apply-crop" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Terapkan Potongan</span>
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
   <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2.5 opacity-0 pointer-events-none transition-all duration-300 z-50">
     <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
     <span id="toast-message">Notifikasi</span>
@@ -345,13 +473,14 @@
   <script>
     lucide.createIcons();
 
-    // Default Application State
+    // Application Default State
     const DEFAULT_STATE = {
       aspectRatio: '3:4',
       bgColor: '#FFFFFF',
       showTopBar: true,
       showBottomBar: true,
       timeframe: 'H4',
+      assetBgColor: '#EAB308',
       username: '@Fungfx',
       usernameFont: 'Satisfy',
       socials: {
@@ -363,21 +492,23 @@
       rightBadgeText: 'FxT',
       footerText: 'PROFILE',
       footerFont: 'Courier Prime',
+      brightness: 100,
+      contrast: 100,
+      exportScale: 2,
+      rawChartImageSrc: null,
       chartImg: null,
-      leftIconImg: null,
+      assetIconImg: null,
       rightLogoImg: null
     };
 
     const state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-    // Canvas & Context Setup
+    // Canvas Elements
     const canvas = document.getElementById('journal-canvas');
     const ctx = canvas.getContext('2d');
 
-    // DOM Inputs References
-    const inputChartFile = document.getElementById('input-chart-file');
-    const inputLeftIconFile = document.getElementById('input-left-icon-file');
-    const inputRightLogoFile = document.getElementById('input-right-logo-file');
+    // Cropper instance variable
+    let cropperInstance = null;
 
     // Toast Alert Helper
     function showToast(msg) {
@@ -391,7 +522,7 @@
       }, 2500);
     }
 
-    // Helper: Draw Rounded Rectangle on Canvas Context
+    // Rounded Rectangle Helper
     function drawRoundedRect(ctx, x, y, width, height, radius, fill, stroke, strokeColor, strokeWidth = 1.5) {
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -416,16 +547,15 @@
       }
     }
 
-    // Vector Social Media Icons Renderer for Canvas
+    // Vector Social Icons
     function drawTikTokIcon(ctx, x, y, size, color) {
       ctx.save();
       ctx.translate(x, y);
       ctx.fillStyle = color;
-      ctx.beginPath();
       const s = size / 24;
       ctx.scale(s, s);
-      ctx.path = new Path2D("M12.525 2.003c1.31 0 2.417.017 3.32.083.18 1.399.8 2.65 1.74 3.59.95.95 2.2 1.56 3.6 1.74v3.39c-1.39 0-2.69-.37-3.83-1.02V15.5a6.5 6.5 0 1 1-6.5-6.5c.34 0 .67.03 1 .08V12.5a3.1 3.1 0 1 0 2.17 2.97V2h-1.5z");
-      ctx.fill(ctx.path);
+      const path = new Path2D("M12.525 2.003c1.31 0 2.417.017 3.32.083.18 1.399.8 2.65 1.74 3.59.95.95 2.2 1.56 3.6 1.74v3.39c-1.39 0-2.69-.37-3.83-1.02V15.5a6.5 6.5 0 1 1-6.5-6.5c.34 0 .67.03 1 .08V12.5a3.1 3.1 0 1 0 2.17 2.97V2h-1.5z");
+      ctx.fill(path);
       ctx.restore();
     }
 
@@ -435,8 +565,8 @@
       ctx.fillStyle = color;
       const s = size / 24;
       ctx.scale(s, s);
-      ctx.path = new Path2D("M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z");
-      ctx.fill(ctx.path);
+      const path = new Path2D("M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z");
+      ctx.fill(path);
       ctx.restore();
     }
 
@@ -447,13 +577,10 @@
       ctx.lineWidth = 2;
       const s = size / 24;
       ctx.scale(s, s);
-      // Outer box
       drawRoundedRect(ctx, 3, 3, 18, 18, 5, false, true, color, 2);
-      // Inner circle
       ctx.beginPath();
       ctx.arc(12, 12, 4.5, 0, Math.PI * 2);
       ctx.stroke();
-      // Top dot
       ctx.beginPath();
       ctx.arc(16.5, 7.5, 1, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -467,210 +594,405 @@
       ctx.fillStyle = color;
       const s = size / 24;
       ctx.scale(s, s);
-      ctx.path = new Path2D("M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z");
-      ctx.fill(ctx.path);
+      const path = new Path2D("M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z");
+      ctx.fill(path);
       ctx.restore();
     }
 
-    function drawGoldBarsIcon(ctx, x, y, size) {
+    function drawGoldBarsIcon(ctx, cx, cy, radius, bgColor) {
       ctx.save();
-      ctx.translate(x, y);
-      // Gold background pill badge
-      ctx.fillStyle = '#EAB308';
+      // Draw Circular Background Badge
+      ctx.fillStyle = bgColor || '#EAB308';
       ctx.beginPath();
-      ctx.arc(12, 12, 12, 0, Math.PI * 2);
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Gold Stack graphic bars inside
-      ctx.fillStyle = '#78350F';
-      ctx.fillRect(6, 13, 12, 3.5);
-      ctx.fillRect(8, 8, 8, 3.5);
+      // Gold Stack bars graphics centered inside
+      ctx.fillStyle = (bgColor === '#FFFFFF') ? '#0F172A' : '#FFFFFF';
+      ctx.fillRect(cx - 8, cy + 2, 16, 4);
+      ctx.fillRect(cx - 5, cy - 4, 10, 4);
       ctx.restore();
     }
 
-    // Master Canvas Render Loop
-    function renderCanvas() {
-      // 1. Calculate Canvas Dimensions based on selected ratio
-      let width = 900;
-      let height = 1200;
+    // Master Canvas Render Engine
+    function renderCanvas(targetCanvas = canvas, scale = 1) {
+      const renderCtx = targetCanvas.getContext('2d');
+
+      // Base logical dimensions
+      let baseWidth = 900;
+      let baseHeight = 1200;
 
       if (state.aspectRatio === '9:16') {
-        width = 900; height = 1600;
+        baseWidth = 900; baseHeight = 1600;
       } else if (state.aspectRatio === '1:1') {
-        width = 1000; height = 1000;
+        baseWidth = 1000; baseHeight = 1000;
       }
 
-      canvas.width = width;
-      canvas.height = height;
-      document.getElementById('canvas-dim-indicator').textContent = `${width} x ${height} px`;
+      const width = baseWidth * scale;
+      const height = baseHeight * scale;
 
-      // 2. Draw Background
-      ctx.fillStyle = state.bgColor || '#FFFFFF';
-      ctx.fillRect(0, 0, width, height);
+      targetCanvas.width = width;
+      targetCanvas.height = height;
 
-      // 3. Draw Chart Image Area (Middle)
+      if (targetCanvas === canvas) {
+        document.getElementById('canvas-dim-indicator').textContent = `${width} x ${height} px`;
+      }
+
+      renderCtx.save();
+      renderCtx.scale(scale, scale);
+
+      // 1. Canvas Background
+      renderCtx.fillStyle = state.bgColor || '#FFFFFF';
+      renderCtx.fillRect(0, 0, baseWidth, baseHeight);
+
+      // 2. Chart Screenshot Middle Section
       const topPadding = state.showTopBar ? 130 : 50;
       const bottomPadding = state.showBottomBar ? 130 : 50;
       const chartX = 50;
       const chartY = topPadding;
-      const chartW = width - 100;
-      const chartH = height - topPadding - bottomPadding;
+      const chartW = baseWidth - 100;
+      const chartH = baseHeight - topPadding - bottomPadding;
 
       if (state.chartImg) {
-        // Draw centered and formatted chart screenshot
-        ctx.save();
-        ctx.drawImage(state.chartImg, chartX, chartY, chartW, chartH);
-        ctx.restore();
+        renderCtx.save();
+        // Apply Clarity & Brightness filters
+        renderCtx.filter = `brightness(${state.brightness}%) contrast(${state.contrast}%)`;
+        renderCtx.drawImage(state.chartImg, chartX, chartY, chartW, chartH);
+        renderCtx.restore();
       } else {
-        // Placeholder outline when no chart is uploaded yet
-        ctx.save();
-        ctx.strokeStyle = '#CBD5E1';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-        ctx.strokeRect(chartX, chartY, chartW, chartH);
+        // Placeholder rectangle when no chart is uploaded
+        renderCtx.save();
+        renderCtx.strokeStyle = '#CBD5E1';
+        renderCtx.lineWidth = 2;
+        renderCtx.setLineDash([8, 8]);
+        renderCtx.strokeRect(chartX, chartY, chartW, chartH);
 
-        ctx.fillStyle = '#94A3B8';
-        ctx.font = '600 18px Inter';
-        ctx.textAlign = 'center';
-        ctx.fillText('Klik "Upload Screenshot Chart" di Menu Kiri', width / 2, chartY + chartH / 2);
-        ctx.restore();
+        renderCtx.fillStyle = '#94A3B8';
+        renderCtx.font = '600 18px Inter, sans-serif';
+        renderCtx.textAlign = 'center';
+        renderCtx.fillText('Klik "Upload Screenshot Chart" & Potong Gambar', baseWidth / 2, chartY + chartH / 2);
+        renderCtx.restore();
       }
 
-      // 4. Draw Top Pill/Capsule Header Bar
+      // 3. Top Floating Capsule Header Bar
       if (state.showTopBar) {
-        ctx.save();
+        renderCtx.save();
         const topPillX = 50;
         const topPillY = 35;
-        const topPillW = width - 100;
+        const topPillW = baseWidth - 100;
         const topPillH = 65;
         const radius = topPillH / 2;
 
-        // Soft subtle container shadow & background fill
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetY = 4;
-        drawRoundedRect(ctx, topPillX, topPillY, topPillW, topPillH, radius, '#FFFFFF', true, '#E2E8F0', 1.5);
-        ctx.shadowColor = 'transparent'; // reset shadow
+        // Container Pill Shadow & Fill
+        renderCtx.shadowColor = 'rgba(0, 0, 0, 0.06)';
+        renderCtx.shadowBlur = 15;
+        renderCtx.shadowOffsetY = 4;
+        drawRoundedRect(renderCtx, topPillX, topPillY, topPillW, topPillH, radius, '#FFFFFF', true, '#E2E8F0', 1.5);
+        renderCtx.shadowColor = 'transparent';
 
-        // --- Left Element inside Pill: Timeframe + Icon ---
-        const leftPillX = topPillX + 12;
-        const leftPillY = topPillY + 10;
-        const leftPillH = 45;
+        // --- Left Section: Circular Asset Avatar Badge & Timeframe ---
+        const assetCircleX = topPillX + 32.5;
+        const assetCircleY = topPillY + topPillH / 2;
+        const assetRadius = 22;
 
-        // Draw left icon (Gold stack or user custom logo)
-        if (state.leftIconImg) {
-          ctx.drawImage(state.leftIconImg, leftPillX + 6, leftPillY + 6, 32, 32);
+        if (state.assetIconImg) {
+          // Render uploaded asset logo inside PERFECT CIRCLE
+          renderCtx.save();
+          renderCtx.beginPath();
+          renderCtx.arc(assetCircleX, assetCircleY, assetRadius, 0, Math.PI * 2);
+          renderCtx.clip();
+          renderCtx.drawImage(state.assetIconImg, assetCircleX - assetRadius, assetCircleY - assetRadius, assetRadius * 2, assetRadius * 2);
+          renderCtx.restore();
         } else {
-          drawGoldBarsIcon(ctx, leftPillX + 8, leftPillY + 10, 24);
+          // Render default Gold Stack icon inside perfect circle
+          drawGoldBarsIcon(renderCtx, assetCircleX, assetCircleY, assetRadius, state.assetBgColor);
         }
 
-        // Draw Timeframe Text Badge
+        // Timeframe Text Badge
         if (state.timeframe) {
-          ctx.fillStyle = '#0F172A';
-          ctx.font = 'bold 20px Oswald, sans-serif';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(state.timeframe.toUpperCase(), leftPillX + 48, topPillY + topPillH / 2);
+          renderCtx.fillStyle = '#0F172A';
+          renderCtx.font = 'bold 20px Oswald, sans-serif';
+          renderCtx.textAlign = 'left';
+          renderCtx.textBaseline = 'middle';
+          renderCtx.fillText(state.timeframe.toUpperCase(), topPillX + 65, topPillY + topPillH / 2 + 1);
         }
 
-        // --- Center Element inside Pill: Social Icons + Slash + Username ---
-        let currentSocialX = width / 2 - 120;
+        // --- Center Section: Social Media Icons + Slash + Username ---
+        let currentSocialX = baseWidth / 2 - 120;
         const socialY = topPillY + topPillH / 2 - 9;
         const iconSize = 18;
         const iconGap = 24;
 
         if (state.socials.tiktok) {
-          drawTikTokIcon(ctx, currentSocialX, socialY, iconSize, '#000000');
+          drawTikTokIcon(renderCtx, currentSocialX, socialY, iconSize, '#000000');
           currentSocialX += iconGap;
         }
         if (state.socials.x) {
-          drawXIcon(ctx, currentSocialX, socialY, iconSize, '#000000');
+          drawXIcon(renderCtx, currentSocialX, socialY, iconSize, '#000000');
           currentSocialX += iconGap;
         }
         if (state.socials.ig) {
-          drawInstagramIcon(ctx, currentSocialX, socialY, iconSize, '#000000');
+          drawInstagramIcon(renderCtx, currentSocialX, socialY, iconSize, '#000000');
           currentSocialX += iconGap;
         }
         if (state.socials.tg) {
-          drawTelegramIcon(ctx, currentSocialX, socialY, iconSize, '#000000');
+          drawTelegramIcon(renderCtx, currentSocialX, socialY, iconSize, '#000000');
           currentSocialX += iconGap;
         }
 
-        // Draw Slash divider & Handle text
+        // Slash & Cursive Username Text
         if (state.username) {
-          ctx.fillStyle = '#64748B';
-          ctx.font = '400 18px Inter, sans-serif';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('/', currentSocialX + 2, topPillY + topPillH / 2);
+          renderCtx.fillStyle = '#64748B';
+          renderCtx.font = '400 18px Inter, sans-serif';
+          renderCtx.textAlign = 'left';
+          renderCtx.textBaseline = 'middle';
+          renderCtx.fillText('/', currentSocialX + 2, topPillY + topPillH / 2);
 
-          ctx.fillStyle = '#0F172A';
-          ctx.font = `600 24px "${state.usernameFont}", cursive`;
-          ctx.fillText(state.username, currentSocialX + 18, topPillY + topPillH / 2 + 1);
+          renderCtx.fillStyle = '#0F172A';
+          renderCtx.font = `600 24px "${state.usernameFont}", cursive`;
+          renderCtx.fillText(state.username, currentSocialX + 18, topPillY + topPillH / 2 + 1);
         }
 
-        // --- Right Element inside Pill: Dark Circle Badge / Logo ---
-        const rightCircleX = topPillX + topPillW - 33;
+        // --- Right Section: Dark Circle Badge / Initials ---
+        const rightCircleX = topPillX + topPillW - 32.5;
         const rightCircleY = topPillY + topPillH / 2;
         const rightRadius = 22;
 
         if (state.rightLogoImg) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(rightCircleX, rightCircleY, rightRadius, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(state.rightLogoImg, rightCircleX - rightRadius, rightCircleY - rightRadius, rightRadius * 2, rightRadius * 2);
-          ctx.restore();
+          renderCtx.save();
+          renderCtx.beginPath();
+          renderCtx.arc(rightCircleX, rightCircleY, rightRadius, 0, Math.PI * 2);
+          renderCtx.clip();
+          renderCtx.drawImage(state.rightLogoImg, rightCircleX - rightRadius, rightCircleY - rightRadius, rightRadius * 2, rightRadius * 2);
+          renderCtx.restore();
         } else {
-          ctx.fillStyle = '#000000';
-          ctx.beginPath();
-          ctx.arc(rightCircleX, rightCircleY, rightRadius, 0, Math.PI * 2);
-          ctx.fill();
+          renderCtx.fillStyle = '#000000';
+          renderCtx.beginPath();
+          renderCtx.arc(rightCircleX, rightCircleY, rightRadius, 0, Math.PI * 2);
+          renderCtx.fill();
 
           if (state.rightBadgeText) {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 15px Oswald, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(state.rightBadgeText, rightCircleX, rightCircleY + 1);
+            renderCtx.fillStyle = '#FFFFFF';
+            renderCtx.font = 'bold 15px Oswald, sans-serif';
+            renderCtx.textAlign = 'center';
+            renderCtx.textBaseline = 'middle';
+            renderCtx.fillText(state.rightBadgeText, rightCircleX, rightCircleY + 1);
           }
         }
 
-        ctx.restore();
+        renderCtx.restore();
       }
 
-      // 5. Draw Bottom Pill/Capsule Footer Bar
+      // 4. Bottom Floating Capsule Footer Bar
       if (state.showBottomBar) {
-        ctx.save();
+        renderCtx.save();
         const bottomPillH = 65;
-        const bottomPillW = width - 280;
-        const bottomPillX = (width - bottomPillW) / 2;
-        const bottomPillY = height - 85;
+        const bottomPillW = baseWidth - 280;
+        const bottomPillX = (baseWidth - bottomPillW) / 2;
+        const bottomPillY = baseHeight - 85;
         const radius = bottomPillH / 2;
 
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetY = 4;
-        drawRoundedRect(ctx, bottomPillX, bottomPillY, bottomPillW, bottomPillH, radius, '#FFFFFF', true, '#E2E8F0', 1.5);
-        ctx.shadowColor = 'transparent';
+        renderCtx.shadowColor = 'rgba(0, 0, 0, 0.06)';
+        renderCtx.shadowBlur = 15;
+        renderCtx.shadowOffsetY = 4;
+        drawRoundedRect(renderCtx, bottomPillX, bottomPillY, bottomPillW, bottomPillH, radius, '#FFFFFF', true, '#E2E8F0', 1.5);
+        renderCtx.shadowColor = 'transparent';
 
-        // Draw Centered Text inside Footer Pill
+        // Centered Footer Text
         if (state.footerText) {
-          ctx.fillStyle = '#0F172A';
-          ctx.font = `700 24px "${state.footerFont}", monospace`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.letterSpacing = '2px';
-          ctx.fillText(state.footerText.toUpperCase(), width / 2, bottomPillY + bottomPillH / 2 + 1);
+          renderCtx.fillStyle = '#0F172A';
+          renderCtx.font = `700 24px "${state.footerFont}", monospace`;
+          renderCtx.textAlign = 'center';
+          renderCtx.textBaseline = 'middle';
+          renderCtx.fillText(state.footerText.toUpperCase(), baseWidth / 2, bottomPillY + bottomPillH / 2 + 1);
         }
 
-        ctx.restore();
+        renderCtx.restore();
+      }
+
+      renderCtx.restore();
+    }
+
+    // CROPPER.JS MODAL & IMAGE CROPPING LOGIC
+    const cropperModal = document.getElementById('cropper-modal');
+    const cropperTargetImg = document.getElementById('cropper-target-img');
+    const btnOpenCropper = document.getElementById('btn-open-cropper');
+
+    function openCropperModal() {
+      if (!state.rawChartImageSrc) return;
+      cropperTargetImg.src = state.rawChartImageSrc;
+      cropperModal.classList.remove('hidden');
+
+      if (cropperInstance) {
+        cropperInstance.destroy();
+      }
+
+      cropperInstance = new Cropper(cropperTargetImg, {
+        aspectRatio: NaN, // Free ratio default
+        viewMode: 1,
+        autoCropArea: 0.9,
+        responsive: true,
+        background: true
+      });
+    }
+
+    function closeCropperModal() {
+      cropperModal.classList.add('hidden');
+      if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
       }
     }
 
-    // Input Event Listeners
+    btnOpenCropper.addEventListener('click', openCropperModal);
+    document.getElementById('btn-close-cropper').addEventListener('click', closeCropperModal);
+
+    // Aspect Ratio Toggle Buttons inside Cropper Modal
+    document.querySelectorAll('.btn-crop-ratio').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-crop-ratio').forEach(b => {
+          b.classList.remove('bg-blue-600', 'text-white');
+          b.classList.add('bg-slate-800', 'text-slate-300');
+        });
+        e.target.classList.remove('bg-slate-800', 'text-slate-300');
+        e.target.classList.add('bg-blue-600', 'text-white');
+
+        const ratio = parseFloat(e.target.getAttribute('data-ratio'));
+        if (cropperInstance) {
+          cropperInstance.setAspectRatio(isNaN(ratio) ? NaN : ratio);
+        }
+      });
+    });
+
+    // Cropper Action Buttons
+    document.getElementById('btn-crop-rotate-left').addEventListener('click', () => {
+      if (cropperInstance) cropperInstance.rotate(-90);
+    });
+    document.getElementById('btn-crop-rotate-right').addEventListener('click', () => {
+      if (cropperInstance) cropperInstance.rotate(90);
+    });
+    document.getElementById('btn-crop-reset').addEventListener('click', () => {
+      if (cropperInstance) cropperInstance.reset();
+    });
+
+    // Apply Cropped Image Action
+    document.getElementById('btn-apply-crop').addEventListener('click', () => {
+      if (!cropperInstance) return;
+
+      const croppedCanvas = cropperInstance.getCroppedCanvas({
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+      });
+
+      if (croppedCanvas) {
+        const croppedImg = new Image();
+        croppedImg.onload = () => {
+          state.chartImg = croppedImg;
+          renderCanvas();
+          closeCropperModal();
+          showToast("Screenshot Chart Berhasil Dipotong!");
+        };
+        croppedImg.src = croppedCanvas.toDataURL('image/png');
+      }
+    });
+
+    // File Input & Image Handlers
+    const inputChartFile = document.getElementById('input-chart-file');
+    const chartDropzone = document.getElementById('chart-dropzone');
+
+    chartDropzone.addEventListener('click', () => inputChartFile.click());
+
+    chartDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      chartDropzone.classList.add('border-blue-500', 'bg-blue-500/5');
+    });
+
+    chartDropzone.addEventListener('dragleave', () => {
+      chartDropzone.classList.remove('border-blue-500', 'bg-blue-500/5');
+    });
+
+    chartDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      chartDropzone.classList.remove('border-blue-500', 'bg-blue-500/5');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleChartFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    inputChartFile.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleChartFileSelect(e.target.files[0]);
+      }
+    });
+
+    function handleChartFileSelect(file) {
+      document.getElementById('chart-filename').textContent = file.name;
+      btnOpenCropper.disabled = false;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        state.rawChartImageSrc = evt.target.result;
+        // Auto open cropper tool on upload
+        openCropperModal();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Asset Icon Custom Image Upload
+    const inputAssetIconFile = document.getElementById('input-asset-icon-file');
+    document.getElementById('btn-trigger-asset-icon').addEventListener('click', () => inputAssetIconFile.click());
+    inputAssetIconFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('lbl-asset-icon').textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            state.assetIconImg = img;
+            renderCanvas();
+            showToast("Asset Icon Lingkaran Dipasang!");
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Right Logo Custom Image Upload
+    const inputRightLogoFile = document.getElementById('input-right-logo-file');
+    document.getElementById('btn-trigger-right-logo').addEventListener('click', () => inputRightLogoFile.click());
+    inputRightLogoFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('lbl-right-logo').textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            state.rightLogoImg = img;
+            renderCanvas();
+            showToast("Logo Kanan Dipasang!");
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Control Inputs Event Listeners
     document.getElementById('input-timeframe').addEventListener('input', (e) => {
       state.timeframe = e.target.value; renderCanvas();
+    });
+
+    document.getElementById('input-asset-bg-color').addEventListener('input', (e) => {
+      state.assetBgColor = e.target.value; renderCanvas();
+    });
+
+    document.getElementById('select-asset-preset').addEventListener('change', (e) => {
+      state.assetBgColor = e.target.value;
+      document.getElementById('input-asset-bg-color').value = e.target.value;
+      renderCanvas();
     });
 
     document.getElementById('input-username').addEventListener('input', (e) => {
@@ -715,6 +1037,23 @@
       renderCanvas();
     });
 
+    // Sliders
+    document.getElementById('slider-brightness').addEventListener('input', (e) => {
+      state.brightness = e.target.value;
+      document.getElementById('val-brightness').textContent = `${e.target.value}%`;
+      renderCanvas();
+    });
+
+    document.getElementById('slider-contrast').addEventListener('input', (e) => {
+      state.contrast = e.target.value;
+      document.getElementById('val-contrast').textContent = `${e.target.value}%`;
+      renderCanvas();
+    });
+
+    document.getElementById('select-export-scale').addEventListener('change', (e) => {
+      state.exportScale = parseInt(e.target.value);
+    });
+
     // Social Toggles
     ['tiktok', 'x', 'ig', 'tg'].forEach(key => {
       document.getElementById(`social-${key}`).addEventListener('change', (e) => {
@@ -723,117 +1062,44 @@
       });
     });
 
-    // Chart Image Dropzone & File Upload Logic
-    const chartDropzone = document.getElementById('chart-dropzone');
-    chartDropzone.addEventListener('click', () => inputChartFile.click());
-
-    chartDropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      chartDropzone.classList.add('border-blue-500', 'bg-blue-500/5');
-    });
-
-    chartDropzone.addEventListener('dragleave', () => {
-      chartDropzone.classList.remove('border-blue-500', 'bg-blue-500/5');
-    });
-
-    chartDropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      chartDropzone.classList.remove('border-blue-500', 'bg-blue-500/5');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleChartImageFile(e.dataTransfer.files[0]);
-      }
-    });
-
-    inputChartFile.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleChartImageFile(e.target.files[0]);
-      }
-    });
-
-    function handleChartImageFile(file) {
-      document.getElementById('chart-filename').textContent = file.name;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const img = new Image();
-        img.onload = () => {
-          state.chartImg = img;
-          renderCanvas();
-          showToast("Screenshot Chart Berhasil Dipasang!");
-        };
-        img.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // Left Icon Custom File Upload
-    document.getElementById('btn-trigger-left-icon').addEventListener('click', () => inputLeftIconFile.click());
-    inputLeftIconFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        document.getElementById('lbl-left-icon').textContent = file.name;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          const img = new Image();
-          img.onload = () => {
-            state.leftIconImg = img;
-            renderCanvas();
-            showToast("Icon Kiri Dipasang!");
-          };
-          img.src = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Right Badge Logo Custom File Upload
-    document.getElementById('btn-trigger-right-logo').addEventListener('click', () => inputRightLogoFile.click());
-    inputRightLogoFile.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        document.getElementById('lbl-right-logo').textContent = file.name;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          const img = new Image();
-          img.onload = () => {
-            state.rightLogoImg = img;
-            renderCanvas();
-            showToast("Logo Badge Kanan Dipasang!");
-          };
-          img.src = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Download High-Res PNG Export Function
+    // High-Resolution PNG Export Function
     function exportHDImage() {
+      const scale = state.exportScale || 2;
+      const exportCanvas = document.createElement('canvas');
+      renderCanvas(exportCanvas, scale);
+
       const link = document.createElement('a');
       const timeTag = new Date().toISOString().slice(0, 10);
-      link.download = `TradeJournal_Capsule_${state.timeframe}_${timeTag}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
+      link.download = `TradeJournal_${state.timeframe}_${scale}xHD_${timeTag}.png`;
+      link.href = exportCanvas.toDataURL('image/png', 1.0);
       link.click();
-      showToast("High-Res Journal PNG berhasil diunduh!");
+
+      showToast(`Export Gambar HD ${scale}x Scale Berhasil!`);
     }
 
-    document.getElementById('btn-quick-export').addEventListener('click', exportHDImage);
+    document.getElementById('btn-export-png').addEventListener('click', exportHDImage);
 
     // Reset Template Logic
-    document.getElementById('btn-reset-all').addEventListener('click', () => {
+    document.getElementById('btn-reset-template').addEventListener('click', () => {
       Object.assign(state, JSON.parse(JSON.stringify(DEFAULT_STATE)));
       document.getElementById('input-timeframe').value = state.timeframe;
       document.getElementById('input-username').value = state.username;
       document.getElementById('input-right-badge').value = state.rightBadgeText;
       document.getElementById('input-footer-text').value = state.footerText;
+      document.getElementById('slider-brightness').value = 100;
+      document.getElementById('slider-contrast').value = 100;
+      document.getElementById('val-brightness').textContent = '100%';
+      document.getElementById('val-contrast').textContent = '100%';
       document.getElementById('chart-filename').textContent = "Upload Screenshot Chart Trading";
-      document.getElementById('lbl-left-icon').textContent = "Gold Stack";
+      document.getElementById('lbl-asset-icon').textContent = "Gold Stack (Default)";
       document.getElementById('lbl-right-logo').textContent = "Upload Logo";
+      btnOpenCropper.disabled = true;
       renderCanvas();
-      showToast("Template dikembalikan ke semula!");
+      showToast("Template dikembalikan ke pengaturan awal!");
     });
 
-    // Initial Trigger on Load
+    // Initial Load Render
     window.addEventListener('DOMContentLoaded', () => {
-      // Ensure Google fonts are loaded before first canvas text render
       document.fonts.ready.then(() => {
         renderCanvas();
       });
